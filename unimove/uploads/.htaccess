@@ -1,0 +1,7 @@
+# Disable directory listing for uploaded content
+Options -Indexes
+
+# Block PHP execution inside the uploads directory
+<FilesMatch "\.(php|phtml|phar|pl|py|cgi|sh)$">
+    Require all denied
+</FilesMatch>

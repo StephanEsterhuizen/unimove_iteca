@@ -1,0 +1,17 @@
+﻿# Sensitive / dev-only
+unimove/uploads/mail.log
+unimove/_dropzone/
+
+# Build artefacts (regenerate locally)
+unimove-deploy.zip
+docs/Deliverable_2_*.docx
+docs/screenshots/
+# OS / IDE noise
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Docker volumes
+mysql_data/

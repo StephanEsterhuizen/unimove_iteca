@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UniMove Res Essentials — Design Diagrams</title>
+<style>
+    body { font-family: Arial, "Segoe UI", sans-serif; max-width: 1400px; margin: 30px auto; padding: 0 20px; color: #000; line-height: 1.5; }
+    h1 { color: #000; border-bottom: 2px solid #000; padding-bottom: 8px; }
+    h2 { color: #000; margin-top: 50px; padding-top: 20px; border-top: 1px solid #ccc; }
+    .diagram-frame { background: #fff; border: 1px solid #999; padding: 24px; margin: 20px 0; overflow-x: auto; }
+    .diagram-frame .mermaid { display: inline-block; min-width: 100%; }
+    .note { background: #f5f5f5; border-left: 4px solid #666; padding: 12px 16px; margin: 10px 0; font-size: 14px; }
+    .mermaid { background: white; }
+    code { background: #f0f0f0; color: #000; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+
+    /* Force every Mermaid-rendered shape to be perfectly flat 2D —
+       no shadows, no gradients, no anti-aliased softness. */
+    .mermaid svg * {
+        filter: none !important;
+        text-shadow: none !important;
+    }
+    .mermaid svg rect,
+    .mermaid svg circle,
+    .mermaid svg polygon,
+    .mermaid svg ellipse,
+    .mermaid svg path {
+        stroke-width: 1.5px;
+    }
+
+    /* Subgraph clusters: keep the border but make the fill transparent so
+       arrows crossing the cluster boundary don't appear "broken". */
+    .mermaid svg .cluster rect {
+        fill: transparent !important;
+    }
+    /* Make sure edge lines render ON TOP of cluster backgrounds. */
+    .mermaid svg .edgePath { z-index: 10; }
+
+    /* Hide the boxy frame around stick-figure actors so they read as
+       "floating" UML actors rather than nodes-with-borders. Mermaid wraps
+       every node's foreignObject content in a <rect> we can target via
+       the node id. */
+    .mermaid svg .node[id*="Student-"] rect,
+    .mermaid svg .node[id*="Admin-"]   rect,
+    .mermaid svg .node[id*="Moderator-"] rect,
+    .mermaid svg .node[id*="Mail-"]    rect {
+        stroke: none !important;
+        fill:   transparent !important;
+    }
+</style>
+</head>
+<body>
+
+<h1>UniMove Res Essentials — Design Diagrams</h1>
+
+<div class="note">
+    <strong>How to screenshot for your report:</strong><br>
+    1. Wait for all diagrams to finish rendering (a few seconds).<br>
+    2. Right-click any diagram → <em>Save image as…</em> to download as SVG / PNG, <strong>or</strong> use Windows Snipping Tool (<code>Win+Shift+S</code>) to crop directly.<br>
+    3. Paste into your Word document at the appropriate section.
+</div>
+
+<!-- ===================== 1. EERD ===================== -->
+<h2>1. Enhanced Entity Relationship Diagram (EERD)</h2>
+<p>Shows every database entity, its attributes (with PKs and FKs marked), and the cardinality of every relationship.</p>
+<div class="diagram-frame">
+<pre class="mermaid">
+erDiagram
+    USERS {
+        int user_id PK
+        varchar full_name
+        varchar email UK
+        varchar password_hash
+        enum role "student | moderator | admin"
+        tinyint is_verified
+        varchar otp_code
+        datetime otp_expires_at
+        varchar university
+        tinyint is_suspended
+        timestamp created_at
+    }
+
+    CATEGORIES {
+        int category_id PK
+        varchar name
+        varchar icon
+    }
+
+    PICKUP_ZONES {
+        int zone_id PK
+        varchar name
+        text location_description
+        tinyint is_active
+    }
+
+    TIMESLOTS {
+        int slot_id PK
+        int zone_id FK
+        date slot_date
+        time slot_time
+        tinyint is_booked
+    }
+
+    LISTINGS {
+        int listing_id PK
+        int seller_id FK
+        varchar title
+        text description
+        decimal price
+        int category_id FK
+        enum condition_type
+        int pickup_zone_id FK
+        tinyint is_bundle
+        enum status "pending|active|sold|flagged|removed"
+        timestamp created_at
+    }
+
+    LISTING_IMAGES {
+        int image_id PK
+        int listing_id FK
+        varchar image_path
+        tinyint is_primary
+    }
+
+    ORDERS {
+        int order_id PK
+        int listing_id FK
+        int buyer_id FK
+        int seller_id FK
+        int slot_id FK
+        enum status "pending|confirmed|completed|cancelled|disputed"
+        varchar buyer_otp
+        varchar seller_otp
+        tinyint buyer_confirmed
+        tinyint seller_confirmed
+        decimal total_price
+        datetime completed_at
+    }
+
+    MESSAGES {
+        int message_id PK
+        int sender_id FK
+        int receiver_id FK
+        int listing_id FK
+        int order_id FK
+        text message_text
+        tinyint is_read
+        timestamp sent_at
+    }
+
+    REVIEWS {
+        int review_id PK
+        int order_id FK
+        int reviewer_id FK
+        int reviewee_id FK
+        tinyint rating
+        text comment
+    }
+
+    REPORTS {
+        int report_id PK
+        int reporter_id FK
+        int listing_id FK
+        int user_id FK
+        text reason
+        enum status "open|reviewed|resolved"
+    }
+
+    USERS ||--o{ LISTINGS         : "creates"
+    USERS ||--o{ ORDERS           : "buys"
+    USERS ||--o{ ORDERS           : "sells"
+    USERS ||--o{ MESSAGES         : "sends"
+    USERS ||--o{ MESSAGES         : "receives"
+    USERS ||--o{ REVIEWS          : "writes"
+    USERS ||--o{ REVIEWS          : "is reviewed"
+    USERS ||--o{ REPORTS          : "files"
+    USERS ||--o{ REPORTS          : "is reported"
+
+    CATEGORIES   ||--o{ LISTINGS        : "classifies"
+    PICKUP_ZONES ||--o{ LISTINGS        : "hosts"
+    PICKUP_ZONES ||--o{ TIMESLOTS       : "owns"
+    LISTINGS     ||--o{ LISTING_IMAGES  : "has"
+    LISTINGS     ||--o{ ORDERS          : "fulfils"
+    LISTINGS     ||--o{ REPORTS         : "subject of"
+    TIMESLOTS    ||--o| ORDERS          : "booked by"
+    ORDERS       ||--o{ REVIEWS         : "evaluated by"
+</pre>
+</div>
+
+
+<!-- ===================== 2. Context Diagram ===================== -->
+<h2>2. Context Diagram (Level 0)</h2>
+<p>Shows UniMove as a single black-box system, the external entities (actors) it interacts with, and the major data flows between them.</p>
+<div class="diagram-frame">
+<pre class="mermaid">
+flowchart LR
+    S["Student / User"]
+    A["Admin / Moderator"]
+    M["Email Service"]
+    CS["Campus Security<br/>(physical)"]
+
+    SYS["UniMove<br/>Res Essentials<br/>Platform"]
+
+    S  -- "Register / Login / Browse / List item / Buy / Message / Review" --> SYS
+    SYS -- "Account verified, Listings, Order confirmation, OTP, Messages" --> S
+
+    A  -- "Approve listings, Manage users, Manage zones, Resolve reports" --> SYS
+    SYS -- "Admin dashboards, KPIs, Reports, Audit data" --> A
+
+    SYS -- "OTP emails" --> M
+    M  -- "Delivery confirmation" --> SYS
+
+    SYS -- "Booked timeslot / Pickup zone schedule" --> CS
+</pre>
+</div>
+
+
+<!-- ===================== 3. DFD Level 1 ===================== -->
+<h2>3. Data Flow Diagram (Level 1)</h2>
+<p>Decomposes the UniMove system into its major processes. Numbered processes correspond to the main user journeys (registration, listing, transacting, moderating).</p>
+<div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {'flowchart': {'useMaxWidth': true, 'htmlLabels': true, 'curve': 'basis', 'nodeSpacing': 60, 'rankSpacing': 100}, 'themeVariables': {'fontSize': '14px'}}}%%
+flowchart TB
+
+    %% ============ External entities (top) ============
+    Student["Student"]
+    Admin["Admin"]
+    Email["Email Service"]
+
+    %% ============ Processes (middle) — rounded-rect "bubbles" ============
+    P1("1.0<br/>Authenticate<br/>&amp; Verify")
+    P2("2.0<br/>Discover<br/>Listings")
+    P3("3.0<br/>Manage<br/>Listings")
+    P4("4.0<br/>Place Order<br/>&amp; Handover")
+    P5("5.0<br/>Communicate<br/>&amp; Review")
+    P6("6.0<br/>Admin<br/>Moderation")
+
+    %% ============ Data stores (bottom) ============
+    D1["D1 Users"]
+    D2["D2 Listings"]
+    D3["D3 Pickup Slots"]
+    D4["D4 Orders"]
+    D5["D5 Messages &amp; Reviews"]
+    D6["D6 Reports"]
+
+    %% ============ Authentication flow ============
+    Student -- "credentials,<br/>OTP" --> P1
+    P1 -- "user row" --> D1
+    P1 -- "OTP request" --> Email
+    Email -- "OTP code" --> Student
+
+    %% ============ Discovery flow ============
+    Student -- "search query" --> P2
+    D2 -- "listing rows" --> P2
+    D3 -- "available slots" --> P2
+
+    %% ============ Listing management flow ============
+    Student -- "title, photos,<br/>price" --> P3
+    P3 -- "new / updated<br/>listing" --> D2
+    P3 -- "new timeslots" --> D3
+
+    %% ============ Order &amp; handover flow ============
+    Student -- "select slot,<br/>buy / enter OTP" --> P4
+    P4 -- "order +<br/>dual OTP" --> D4
+    P4 -- "lock slot" --> D3
+    P4 -- "mark sold" --> D2
+    P4 -- "seller OTP<br/>email" --> Email
+
+    %% ============ Communication flow ============
+    Student -- "message,<br/>rating, comment" --> P5
+    P5 -- "chat lines,<br/>reviews" --> D5
+
+    %% ============ Moderation flow ============
+    Student -- "report listing<br/>or user" --> P6
+    Admin -- "approve / flag /<br/>verify / suspend" --> P6
+    P6 -- "report row" --> D6
+    P6 -- "status change" --> D2
+    P6 -- "role / suspend" --> D1
+</pre>
+</div>
+
+
+<!-- ===================== 4. Use Case Diagram ===================== -->
+<h2>4. Use Case Diagram</h2>
+<p>Identifies actors and the use cases each can perform. <code>&lt;&lt;include&gt;&gt;</code> denotes mandatory sub-flows, <code>&lt;&lt;extend&gt;&gt;</code> denotes optional ones.</p>
+<div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {'flowchart': {'useMaxWidth': true, 'htmlLabels': true, 'curve': 'basis', 'nodeSpacing': 30, 'rankSpacing': 60}}}%%
+flowchart LR
+
+    %% --- Stick-figure actors (inline SVG) ---
+    Student["<div style='text-align:center;line-height:1'><svg width='28' height='44' viewBox='0 0 28 44' xmlns='http://www.w3.org/2000/svg'><circle cx='14' cy='6' r='5' fill='none' stroke='black' stroke-width='1.5'/><line x1='14' y1='11' x2='14' y2='26' stroke='black' stroke-width='1.5'/><line x1='14' y1='16' x2='4' y2='22' stroke='black' stroke-width='1.5'/><line x1='14' y1='16' x2='24' y2='22' stroke='black' stroke-width='1.5'/><line x1='14' y1='26' x2='6' y2='40' stroke='black' stroke-width='1.5'/><line x1='14' y1='26' x2='22' y2='40' stroke='black' stroke-width='1.5'/></svg><br/>Student</div>"]
+    Moderator["<div style='text-align:center;line-height:1'><svg width='28' height='44' viewBox='0 0 28 44' xmlns='http://www.w3.org/2000/svg'><circle cx='14' cy='6' r='5' fill='none' stroke='black' stroke-width='1.5'/><line x1='14' y1='11' x2='14' y2='26' stroke='black' stroke-width='1.5'/><line x1='14' y1='16' x2='4' y2='22' stroke='black' stroke-width='1.5'/><line x1='14' y1='16' x2='24' y2='22' stroke='black' stroke-width='1.5'/><line x1='14' y1='26' x2='6' y2='40' stroke='black' stroke-width='1.5'/><line x1='14' y1='26' x2='22' y2='40' stroke='black' stroke-width='1.5'/></svg><br/>Moderator</div>"]
+    Admin["<div style='text-align:center;line-height:1'><svg width='28' height='44' viewBox='0 0 28 44' xmlns='http://www.w3.org/2000/svg'><circle cx='14' cy='6' r='5' fill='none' stroke='black' stroke-width='1.5'/><line x1='14' y1='11' x2='14' y2='26' stroke='black' stroke-width='1.5'/><line x1='14' y1='16' x2='4' y2='22' stroke='black' stroke-width='1.5'/><line x1='14' y1='16' x2='24' y2='22' stroke='black' stroke-width='1.5'/><line x1='14' y1='26' x2='6' y2='40' stroke='black' stroke-width='1.5'/><line x1='14' y1='26' x2='22' y2='40' stroke='black' stroke-width='1.5'/></svg><br/>Admin</div>"]
+    Mail["<div style='text-align:center;line-height:1'><svg width='28' height='44' viewBox='0 0 28 44' xmlns='http://www.w3.org/2000/svg'><circle cx='14' cy='6' r='5' fill='none' stroke='black' stroke-width='1.5'/><line x1='14' y1='11' x2='14' y2='26' stroke='black' stroke-width='1.5'/><line x1='14' y1='16' x2='4' y2='22' stroke='black' stroke-width='1.5'/><line x1='14' y1='16' x2='24' y2='22' stroke='black' stroke-width='1.5'/><line x1='14' y1='26' x2='6' y2='40' stroke='black' stroke-width='1.5'/><line x1='14' y1='26' x2='22' y2='40' stroke='black' stroke-width='1.5'/></svg><br/>Email Service</div>"]
+
+    %% --- System boundary + oval use cases ---
+    subgraph SYS["UniMove Res Essentials"]
+        UC1((Register<br/>account))
+        UC2((Verify<br/>email OTP))
+        UC3((Log in /<br/>Log out))
+        UC4((Browse<br/>listings))
+        UC5((Search &amp;<br/>filter))
+        UC6((View listing<br/>detail))
+        UC7((Create<br/>listing))
+        UC8((Edit / remove<br/>own listing))
+        UC9((Book pickup<br/>timeslot))
+        UC10((Confirm handover<br/>via OTP))
+        UC11((Message<br/>another user))
+        UC12((Submit<br/>review))
+        UC13((Report listing<br/>or user))
+        UC14((View own<br/>dashboard))
+        UC15((View public<br/>profile))
+
+        UC20((Approve / flag<br/>listings))
+        UC21((Verify / suspend<br/>users))
+        UC22((Manage<br/>pickup zones))
+        UC23((Manage<br/>timeslots))
+        UC24((Triage<br/>reports))
+        UC25((View all<br/>orders))
+        UC26((Change<br/>user roles))
+    end
+
+    %% --- Student associations ---
+    Student --- UC1
+    Student --- UC3
+    Student --- UC4
+    Student --- UC5
+    Student --- UC6
+    Student --- UC7
+    Student --- UC8
+    Student --- UC9
+    Student --- UC10
+    Student --- UC11
+    Student --- UC12
+    Student --- UC13
+    Student --- UC14
+    Student --- UC15
+
+    %% --- Moderator associations ---
+    Moderator --- UC3
+    Moderator --- UC20
+    Moderator --- UC24
+    Moderator --- UC25
+
+    %% --- Admin associations ---
+    Admin --- UC3
+    Admin --- UC20
+    Admin --- UC21
+    Admin --- UC22
+    Admin --- UC23
+    Admin --- UC24
+    Admin --- UC25
+    Admin --- UC26
+
+    %% --- &lt;&lt;include&gt;&gt; and Email Service link ---
+    UC1 -.->|"&lt;&lt;include&gt;&gt;"| UC2
+    UC2 -.- Mail
+</pre>
+</div>
+
+
+<!-- ===================== 5. Database Schema Visualization ===================== -->
+<h2>5. Database Schema (compact view)</h2>
+<p>A simpler schema view focusing on table-to-table foreign key relationships, suitable for the rubric's "Database Design" item.</p>
+<div class="diagram-frame">
+<pre class="mermaid">
+classDiagram
+    direction LR
+
+    class users {
+        +user_id PK
+        full_name
+        email UK
+        password_hash
+        role
+        is_verified
+        is_suspended
+        university
+    }
+    class categories {
+        +category_id PK
+        name
+        icon
+    }
+    class pickup_zones {
+        +zone_id PK
+        name
+        location_description
+        is_active
+    }
+    class timeslots {
+        +slot_id PK
+        +zone_id FK
+        slot_date
+        slot_time
+        is_booked
+    }
+    class listings {
+        +listing_id PK
+        +seller_id FK
+        +category_id FK
+        +pickup_zone_id FK
+        title
+        description
+        price
+        condition_type
+        is_bundle
+        status
+    }
+    class listing_images {
+        +image_id PK
+        +listing_id FK
+        image_path
+        is_primary
+    }
+    class orders {
+        +order_id PK
+        +listing_id FK
+        +buyer_id FK
+        +seller_id FK
+        +slot_id FK
+        status
+        buyer_otp
+        seller_otp
+        total_price
+    }
+    class messages {
+        +message_id PK
+        +sender_id FK
+        +receiver_id FK
+        +listing_id FK
+        message_text
+        is_read
+    }
+    class reviews {
+        +review_id PK
+        +order_id FK
+        +reviewer_id FK
+        +reviewee_id FK
+        rating
+        comment
+    }
+    class reports {
+        +report_id PK
+        +reporter_id FK
+        +listing_id FK
+        +user_id FK
+        reason
+        status
+    }
+
+    users          --> listings        : seller_id
+    users          --> orders          : buyer_id / seller_id
+    users          --> messages        : sender_id / receiver_id
+    users          --> reviews         : reviewer_id / reviewee_id
+    users          --> reports         : reporter_id / user_id
+    categories     --> listings        : category_id
+    pickup_zones   --> listings        : pickup_zone_id
+    pickup_zones   --> timeslots       : zone_id
+    listings       --> listing_images  : listing_id
+    listings       --> orders          : listing_id
+    listings       --> reports         : listing_id
+    timeslots      --> orders          : slot_id
+    orders         --> reviews         : order_id
+</pre>
+</div>
+
+
+<script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'base',
+        themeVariables: {
+            // Classic black-and-white flowchart palette (matches the default
+            // draw.io / Lucidchart export style).
+            background:         '#FFFFFF',
+            primaryColor:       '#FFFFFF',
+            primaryTextColor:   '#000000',
+            primaryBorderColor: '#000000',
+            secondaryColor:     '#F5F5F5',
+            secondaryTextColor: '#000000',
+            secondaryBorderColor: '#000000',
+            tertiaryColor:      '#FFFFFF',
+            tertiaryTextColor:  '#000000',
+            tertiaryBorderColor:'#000000',
+            lineColor:          '#000000',
+            textColor:          '#000000',
+            mainBkg:            '#FFFFFF',
+            nodeBorder:         '#000000',
+            clusterBkg:         '#FAFAFA',
+            clusterBorder:      '#000000',
+            edgeLabelBackground:'#FFFFFF',
+            fontFamily:         'Arial, sans-serif',
+            fontSize:           '14px',
+        },
+        flowchart: {
+            useMaxWidth: false,      // let diagrams expand to their natural width
+            htmlLabels:  true,
+            curve:       'basis',    // smooth bezier curves on connectors
+            nodeSpacing: 60,          // more horizontal breathing room
+            rankSpacing: 90,          // more vertical breathing room
+            padding:     15,
+            diagramPadding: 20,
+        },
+        er:        { useMaxWidth: false, layoutDirection: 'TB' },
+    });
+</script>
+</body>
+</html>
