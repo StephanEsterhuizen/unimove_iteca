@@ -1,0 +1,67 @@
+# =====================================================================
+#  UniMove Res Essentials — local dev stack
+#  Usage:
+#     docker compose up -d
+#     open http://localhost:8000  (the site)
+#     open http://localhost:8080  (phpMyAdmin)
+#  Reset everything:
+#     docker compose down -v
+# =====================================================================
+
+services:
+
+  web:
+    build:
+      context: ./docker/php
+    container_name: unimove-web
+    ports:
+      - "8001:80"
+    volumes:
+      - ./unimove:/var/www/html
+    environment:
+      DB_HOST: mysql
+      DB_NAME: unimove
+      DB_USER: unimove
+      DB_PASS: unimove_pw
+      DB_CHARSET: utf8mb4
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: unimove-mysql
+    ports:
+      - "3307:3306"      # use 3307 on the host to avoid clashing with a local MySQL
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpw
+      MYSQL_DATABASE:      unimove
+      MYSQL_USER:          unimove
+      MYSQL_PASSWORD:      unimove_pw
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./unimove/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpw"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: unimove-phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST:        mysql
+      PMA_USER:        root
+      PMA_PASSWORD:    rootpw
+      UPLOAD_LIMIT:    32M
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
