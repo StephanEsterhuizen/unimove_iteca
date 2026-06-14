@@ -1,13 +1,10 @@
 <?php
-/**
- * Admin login — separate from the student login.
- * Refuses any non-admin / non-moderator account so this URL is the only
- * way into the admin area.
- */
+// Admin login — refuses any non-admin / non-moderator account.
+
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
 
-// Already logged in as admin/mod? Skip straight to dashboard.
+
 if (is_logged_in() && in_array(current_role(), ['admin', 'moderator'], true)) {
     header('Location: dashboard.php');
     exit;

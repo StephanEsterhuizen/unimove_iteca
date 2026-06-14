@@ -1,18 +1,5 @@
 <?php
-/**
- * Order confirmation + handover OTP verification.
- *
- * Each order has TWO OTPs (buyer_otp + seller_otp). On handover:
- *   - The BUYER receives the seller's OTP from the seller in person, and enters it here.
- *     When correct, buyer_confirmed = 1.
- *   - The SELLER receives the buyer's OTP from the buyer, and enters it here.
- *     When correct, seller_confirmed = 1.
- *   - When both confirmed, status = 'completed', completed_at is set, the timeslot
- *     remains booked, and the listing is marked 'sold'.
- *
- * The page shows each party only the OTP they should hand over to the other side
- * (so the buyer can read their own buyer_otp, and the seller can read their seller_otp).
- */
+// Order confirmation + dual-OTP handover. Both parties confirm to complete.
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/db.php';
@@ -51,7 +38,7 @@ if ((int)$order['bid'] !== $uid && (int)$order['sid'] !== $uid) {
 $is_seller = (int)$order['sid'] === $uid;
 $is_buyer  = (int)$order['bid'] === $uid;
 
-/* ---- POST: verify OTP from the other party ---- */
+// POST: verify OTP from the other party
 $otp_error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'verify_otp') {
     require_csrf();
@@ -82,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'verif
     }
 }
 
-/* ---- POST: submit review (only after order is completed) ---- */
+// POST: submit review (only after order is completed)
 $review_error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submit_review') {
     require_csrf();
@@ -124,7 +111,7 @@ $stmt = $pdo->prepare('SELECT status, buyer_confirmed, seller_confirmed FROM ord
 $stmt->execute([$id]);
 $state = $stmt->fetch();
 
-/* ---- Review state for the completed view ---- */
+// Review state for the completed view
 $my_review     = null;
 $their_review  = null;
 $reviewee_id   = $is_buyer ? (int)$order['sid'] : (int)$order['bid'];

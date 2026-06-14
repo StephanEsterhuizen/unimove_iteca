@@ -38,7 +38,7 @@ if (($_GET['ajax'] ?? '') === 'thread') {
     exit;
 }
 
-/* ---- Send message ---- */
+// Send message
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send') {
     require_csrf();
     $to       = (int)($_POST['to'] ?? 0);
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send'
     exit;
 }
 
-/* ---- Conversation list (distinct partners) ---- */
+// Conversation list (distinct partners)
 $stmt = $pdo->prepare(
     "SELECT
          CASE WHEN m.sender_id = :uid THEN m.receiver_id ELSE m.sender_id END AS partner_id,
@@ -79,7 +79,7 @@ $stmt = $pdo->prepare(
 $stmt->execute(['uid' => $uid, 'uid2' => $uid, 'uid3' => $uid, 'uid4' => $uid, 'uid5' => $uid]);
 $conversations = $stmt->fetchAll();
 
-/* ---- Active conversation ---- */
+// Active conversation
 $with_id    = (int)($_GET['with'] ?? 0);
 $listing_id = (int)($_GET['listing'] ?? 0);
 if (!$with_id && !empty($conversations)) {

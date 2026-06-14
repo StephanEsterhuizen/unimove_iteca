@@ -1,15 +1,5 @@
 <?php
-/**
- * Register — three-step flow matching the original design.
- *   step=email   : enter university email, server generates OTP and emails it,
- *                  partial data stored in session.
- *   step=otp     : enter 6-digit code, server validates against session+expiry.
- *   step=details : enter name + password, server creates the user, logs in,
- *                  redirects to dashboard.
- *
- * The user is only WRITTEN to the DB at step 3 — until then everything is
- * held in $_SESSION['register'].
- */
+// 3-step registration: email -> OTP -> details. DB write happens only at step 3.
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/db.php';
@@ -25,7 +15,7 @@ if (!isset($_SESSION['register'])) $_SESSION['register'] = [];
 $reg     = &$_SESSION['register'];
 $errors  = [];
 
-/* ----------------- Step 1: email ----------------- */
+// Step 1: email
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'email') {
     require_csrf();
     $email = strtolower(trim($_POST['email'] ?? ''));
@@ -67,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'email
     $step = 'email';
 }
 
-/* ----------------- Resend OTP ----------------- */
+// Resend OTP
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resend') {
     require_csrf();
     if (!empty($reg['email'])) {
@@ -80,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resen
     exit;
 }
 
-/* ----------------- Step 2: OTP ----------------- */
+// Step 2: OTP
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'otp') {
     require_csrf();
     $otp_input = preg_replace('/\D/', '', $_POST['otp'] ?? '');
@@ -104,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'otp')
     }
 }
 
-/* ----------------- Step 3: details ----------------- */
+// Step 3: details
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'details') {
     require_csrf();
     $name       = trim($_POST['full_name'] ?? '');

@@ -1,14 +1,8 @@
 <?php
-/**
- * UniMove Res Essentials — Session + Auth Helpers
- *
- * Include this on every protected page. It starts the session, exposes
- * RBAC helpers, and provides CSRF utilities.
- */
+// Session, RBAC, CSRF, and small helpers.
 
 require_once __DIR__ . '/config.php';
 
-// Harden session cookie + start session
 if (session_status() === PHP_SESSION_NONE) {
     session_name(SESSION_NAME);
     session_set_cookie_params([
@@ -21,9 +15,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-/* ---------------------------------------------------------------------
- * Session state helpers
- * ------------------------------------------------------------------- */
+// Session helpers
 
 function is_logged_in(): bool {
     return isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0;
@@ -48,7 +40,6 @@ function current_role(): string {
 }
 
 function login_user(array $user): void {
-    // Prevent session fixation
     session_regenerate_id(true);
     $_SESSION['user_id']   = (int)$user['user_id'];
     $_SESSION['full_name'] = $user['full_name'];
@@ -66,9 +57,7 @@ function logout_user(): void {
     session_destroy();
 }
 
-/* ---------------------------------------------------------------------
- * Guards
- * ------------------------------------------------------------------- */
+// Guards
 
 function require_login(string $redirect = 'login.php'): void {
     if (!is_logged_in()) {
@@ -89,13 +78,10 @@ function require_role(array $allowed_roles, string $redirect = 'login.php'): voi
 }
 
 function require_admin(): void {
-    // Admin panel uses its own login at /admin/index.php
     require_role(['admin', 'moderator'], 'index.php');
 }
 
-/* ---------------------------------------------------------------------
- * CSRF
- * ------------------------------------------------------------------- */
+// CSRF
 
 function csrf_token(): string {
     if (empty($_SESSION['csrf_token'])) {
@@ -120,9 +106,7 @@ function require_csrf(): void {
     }
 }
 
-/* ---------------------------------------------------------------------
- * Output helpers
- * ------------------------------------------------------------------- */
+// Output
 
 function e(?string $value): string {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
@@ -135,22 +119,12 @@ function flash_pop(string $key): ?string {
     return $msg;
 }
 
-/* ---------------------------------------------------------------------
- * OTP helpers
- * ------------------------------------------------------------------- */
+// OTP + images
 
 function generate_otp(): string {
     return str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 }
 
-/**
- * Resolve a listing image to a usable URL.
- *
- * Accepts the value stored in listing_images.image_path, which may be either:
- *   - a filename (e.g. "abc123.jpg") stored in /uploads/listings/
- *   - a full URL (e.g. "https://picsum.photos/...") used by seed data
- *   - NULL/empty (returns the fallback placeholder)
- */
 function listing_image_url(?string $path, string $base = ''): string {
     if (empty($path)) {
         return 'https://placehold.co/400x300?text=No+image';

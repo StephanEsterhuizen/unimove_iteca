@@ -1,16 +1,5 @@
 <?php
-/**
- * Shared admin layout. Every admin page (after auth checks) does:
- *
- *     $page_title = 'Users';
- *     $active_admin_nav = 'users';
- *     include __DIR__ . '/_layout.php';
- *     ... page body HTML ...
- *     include __DIR__ . '/_layout_end.php';
- *
- * The layout renders a sticky sidebar + top admin bar. Uses Tailwind via the
- * existing header.php (with $base_path = '../' so asset URLs resolve).
- */
+// Shared admin layout (sticky sidebar + Tailwind header).
 
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';

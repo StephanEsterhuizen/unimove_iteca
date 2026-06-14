@@ -35,7 +35,7 @@ $accounts = [
     ['Taylor Smith',     'taylor@sun.ac.za',     'Test1234',  'student',   'Stellenbosch'],
 ];
 
-/* ---- Guard: refuse if seeded ---- */
+// Guard: refuse if seeded
 $stmt = $pdo->prepare('SELECT user_id FROM users WHERE email = ?');
 $stmt->execute(['admin@unimove.ac.za']);
 $already = $stmt->fetch();
@@ -127,7 +127,7 @@ docker compose up -d</pre>
     try {
         $pdo->beginTransaction();
 
-        /* ---------- USERS ---------- */
+        // USERS
         foreach ($accounts as [$name, $email, $pw, $role, $uni]) {
             $stmt = $pdo->prepare('SELECT user_id FROM users WHERE email = ?');
             $stmt->execute([$email]);
@@ -149,7 +149,7 @@ docker compose up -d</pre>
            which runs every time seed.php is hit (not just on first seed). */
         $zones   = $pdo->query('SELECT zone_id FROM pickup_zones WHERE is_active = 1')->fetchAll();
 
-        /* ---------- LISTINGS ---------- */
+        // LISTINGS
         $catMap = [];
         foreach ($pdo->query('SELECT category_id, name FROM categories')->fetchAll() as $c) {
             $catMap[$c['name']] = (int)$c['category_id'];
@@ -260,7 +260,7 @@ docker compose up -d</pre>
             }
         }
 
-        /* ---------- ORDERS ---------- */
+        // ORDERS
         $sarah_id  = $created_users['sarah@eduvos.ac.za']  ?? 0;
         $mike_id   = $created_users['mike@eduvos.ac.za']   ?? 0;
         $emma_id   = $created_users['emma@uct.ac.za']      ?? 0;
@@ -311,7 +311,7 @@ docker compose up -d</pre>
             )->execute([$oid, $sarah_id, $alex_id]);
         }
 
-        /* ---------- MESSAGES ---------- */
+        // MESSAGES
         if (!empty($listing_ids['MacBook Pro 2022 (M2)']) && $sarah_id && $alex_id) {
             $lid = $listing_ids['MacBook Pro 2022 (M2)'];
             $msgs = [
@@ -328,7 +328,7 @@ docker compose up -d</pre>
             }
         }
 
-        /* ---------- A SAMPLE REPORT ---------- */
+        // A SAMPLE REPORT
         if (!empty($listing_ids['Nike Running Shoes UK 9']) && $mike_id) {
             $pdo->prepare(
                 'INSERT INTO reports (reporter_id, listing_id, reason, status, created_at)

@@ -5,7 +5,7 @@ require_role(['admin', 'moderator'], 'index.php');
 
 $is_admin = current_role() === 'admin';
 
-/* ---- Actions ---- */
+// Actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf();
     $action = $_POST['action'] ?? '';
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-/* ---- Filters ---- */
+// Filters
 $q          = trim($_GET['q'] ?? '');
 $role_f     = $_GET['role']     ?? 'all';
 $verified_f = $_GET['verified'] ?? 'all';

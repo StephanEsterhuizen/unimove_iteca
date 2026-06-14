@@ -1,12 +1,9 @@
-/* =====================================================================
-   UniMove Res Essentials — Global JS
-   Reusable behaviours used across pages.
-   ===================================================================== */
+// Global page behaviours.
 
 (function () {
     'use strict';
 
-    /* ---------- OTP input: auto-advance + paste support ---------- */
+    // OTP cells: auto-advance + paste support.
     document.querySelectorAll('.um-otp-boxes').forEach(function (group) {
         const cells     = Array.from(group.querySelectorAll('.um-otp-cell'));
         const targetSel = group.getAttribute('data-otp-target');
@@ -39,7 +36,34 @@
         });
     });
 
-    /* ---------- Image preview for create-listing ---------- */
+    // Compress an image File to a JPEG Blob ≤ MAX_DIM × MAX_DIM at QUALITY.
+    async function compressImage(file, MAX_DIM = 1600, QUALITY = 0.8) {
+        if (!file.type.startsWith('image/')) return file;
+        const dataUrl = await new Promise((res, rej) => {
+            const r = new FileReader();
+            r.onload = () => res(r.result);
+            r.onerror = rej;
+            r.readAsDataURL(file);
+        });
+        const img = await new Promise((res, rej) => {
+            const i = new Image();
+            i.onload = () => res(i);
+            i.onerror = rej;
+            i.src = dataUrl;
+        });
+        const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
+        const w = Math.round(img.width  * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', QUALITY));
+        if (!blob) return file;
+        const base = file.name.replace(/\.[^.]+$/, '');
+        return new File([blob], base + '.jpg', { type: 'image/jpeg' });
+    }
+
+    // Create-listing: image preview + 3-image minimum.
     const imageInput   = document.getElementById('imageInput');
     const imagePreview = document.getElementById('imagePreview');
     if (imageInput && imagePreview) {
@@ -69,7 +93,7 @@
                     <i data-lucide="upload" class="icon-lg text-gray-400 mb-1"></i>
                     <span class="text-xs text-gray-500">Upload</span>
                 `;
-                lbl.appendChild(imageInput); // re-mount the file input inside the label
+                lbl.appendChild(imageInput);
                 imagePreview.appendChild(lbl);
             }
             if (window.lucide) lucide.createIcons();
@@ -77,20 +101,27 @@
         }
 
         function syncToInput() {
-            // Repackage selected files into DataTransfer so server receives them
             const dt = new DataTransfer();
             files.forEach(f => dt.items.add(f));
             imageInput.files = dt.files;
-            // Submit button state
             const submitBtn = document.getElementById('listingSubmitBtn');
             if (submitBtn) submitBtn.disabled = files.length < 3;
             const counter = document.getElementById('imageCount');
             if (counter) counter.textContent = files.length;
         }
 
-        imageInput.addEventListener('change', function () {
+        imageInput.addEventListener('change', async function () {
             const added = Array.from(this.files || []);
-            files = files.concat(added).slice(0, MAX);
+            if (!added.length) return;
+            // Show a "compressing" hint
+            imagePreview.style.opacity = '.6';
+            const compressed = [];
+            for (const f of added) {
+                try { compressed.push(await compressImage(f)); }
+                catch (e) { compressed.push(f); }
+            }
+            imagePreview.style.opacity = '';
+            files = files.concat(compressed).slice(0, MAX);
             render();
         });
 
@@ -104,7 +135,7 @@
         render();
     }
 
-    /* ---------- Messages auto-refresh (every 5s) ---------- */
+    // Messages auto-refresh every 5 s.
     const chatThread = document.getElementById('chatThread');
     if (chatThread && chatThread.dataset.conversationUrl) {
         const url = chatThread.dataset.conversationUrl;
@@ -117,11 +148,10 @@
                 })
                 .catch(() => {});
         }, 5000);
-        // initial scroll to bottom
         chatThread.scrollTop = chatThread.scrollHeight;
     }
 
-    /* ---------- Listing gallery: click thumbnail to swap main image ---------- */
+    // Listing gallery: click thumbnail to swap main image.
     document.querySelectorAll('[data-gallery-main]').forEach(function (main) {
         const galleryId = main.dataset.galleryMain;
         document.querySelectorAll(`[data-gallery-thumb="${galleryId}"]`).forEach(function (thumb) {

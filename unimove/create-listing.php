@@ -1,18 +1,12 @@
 <?php
-/**
- * Create / edit a listing. The same file handles both: when ?id= is provided
- * and the current user owns the listing, it operates in edit mode.
- *
- * Image quality check: server enforces minimum 3 images on creation.
- */
+// Create or edit a listing. ?id=<n> + ownership = edit mode.
+
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/db.php';
 
 require_login();
 
-// If POST body was bigger than php.ini's post_max_size, both $_POST and $_FILES
-// arrive empty even though CONTENT_LENGTH says the user *did* upload something.
-// Catch that early and show a clean error.
+// Catch a POST that exceeded post_max_size (empty $_POST and $_FILES).
 if ($_SERVER['REQUEST_METHOD'] === 'POST'
     && empty($_POST)
     && empty($_FILES)
@@ -29,7 +23,7 @@ $listing  = null;
 $errors   = [];
 $success  = false;
 
-/* ---- Load existing listing for editing ---- */
+// Load existing listing for editing
 if ($is_edit) {
     $stmt = $pdo->prepare('SELECT * FROM listings WHERE listing_id = ? AND seller_id = ?');
     $stmt->execute([$edit_id, current_user_id()]);
@@ -37,7 +31,7 @@ if ($is_edit) {
     if (!$listing) { http_response_code(403); die('You do not have permission to edit this listing.'); }
 }
 
-/* ---- Lookups ---- */
+// Lookups
 $categories = $pdo->query('SELECT category_id, name FROM categories ORDER BY name')->fetchAll();
 $zones      = $pdo->query('SELECT zone_id, name FROM pickup_zones WHERE is_active = 1 ORDER BY name')->fetchAll();
 $conditions = ['New', 'Like New', 'Good', 'Fair', 'Poor'];
@@ -49,7 +43,7 @@ if ($is_edit) {
     $existing_images = $stmt->fetchAll();
 }
 
-/* ---- Submit ---- */
+// Submit
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf();
 
@@ -69,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!in_array($condition, $conditions, true)) $errors[] = 'Please select a condition.';
     if ($zone_id <= 0)                      $errors[] = 'Please select a pickup zone.';
 
-    /* ---- Validate uploads (only on create or when adding new on edit) ---- */
+    // Validate uploads (only on create or when adding new on edit)
     $uploaded     = $_FILES['images'] ?? null;
     $upload_count = $uploaded && !empty($uploaded['name'][0]) ? count(array_filter($uploaded['name'])) : 0;
 
@@ -137,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$listing_id, $img['name'], $img['is_primary']]);
         }
 
-        /* ---- Timeslots — create new ones in this zone for the seller's chosen times ---- */
+        // Timeslots — create new ones in this zone for the seller's chosen times
         foreach ($timeslots as $t) {
             $date = trim($t['date'] ?? '');
             $time = trim($t['time'] ?? '');

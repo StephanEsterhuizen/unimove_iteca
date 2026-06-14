@@ -5,7 +5,7 @@ require_once __DIR__ . '/includes/db.php';
 $id = (int)($_GET['id'] ?? 0);
 if ($id <= 0) { http_response_code(404); header('Location: 404.php'); exit; }
 
-/* ---------------- Fetch listing + seller ---------------- */
+// Fetch listing + seller
 $stmt = $pdo->prepare(
     "SELECT l.*, c.name AS category, pz.name AS pickup_zone, pz.location_description AS pickup_desc,
             u.user_id AS seller_id, u.full_name AS seller_name, u.is_verified AS seller_verified,
@@ -21,7 +21,7 @@ $listing = $stmt->fetch();
 
 if (!$listing) { http_response_code(404); header('Location: 404.php'); exit; }
 
-/* ---------------- Images ---------------- */
+// Images
 $stmt = $pdo->prepare('SELECT image_path FROM listing_images WHERE listing_id = ? ORDER BY is_primary DESC, image_id ASC');
 $stmt->execute([$id]);
 $images = $stmt->fetchAll();
@@ -30,7 +30,7 @@ if (empty($image_urls)) {
     $image_urls = ['https://placehold.co/800x600?text=No+image'];
 }
 
-/* ---------------- Available timeslots for this zone ---------------- */
+// Available timeslots for this zone
 $timeslots = [];
 if (!empty($listing['pickup_zone_id'])) {
     $stmt = $pdo->prepare(
@@ -43,7 +43,7 @@ if (!empty($listing['pickup_zone_id'])) {
     $timeslots = $stmt->fetchAll();
 }
 
-/* ---------------- Seller rating ---------------- */
+// Seller rating
 $stmt = $pdo->prepare(
     'SELECT AVG(rating) AS avg_rating, COUNT(*) AS review_count
        FROM reviews WHERE reviewee_id = ?'
@@ -55,7 +55,7 @@ $review_count  = (int)($rating_row['review_count'] ?? 0);
 
 $is_owner      = is_logged_in() && current_user_id() === (int)$listing['seller_id'];
 
-/* ---------------- POST: file a report against this listing ---------------- */
+// POST: file a report against this listing
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'report') {
     require_csrf();
     require_login();
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'repor
     exit;
 }
 
-/* ---------------- POST: booking (creates an order) ---------------- */
+// POST: booking (creates an order)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'book') {
     require_csrf();
     require_login();

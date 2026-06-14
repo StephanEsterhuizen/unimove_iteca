@@ -444,59 +444,32 @@ After a successful login, `login_user()` regenerates the PHP session ID (mitigat
 ```javascript
 const form    = document.querySelector('form[action="browse.php"]');
 const results = document.getElementById('browseResults');
-const spinner = document.getElementById('searchSpinner');
-let timer = null, lastAbort = null;
+let timer = null;
 
-function buildQuery() {
+async function runSearch() {
     const params = new URLSearchParams();
     new FormData(form).forEach((v, k) => {
         if (v !== '' && v !== 'all') params.append(k, v);
     });
-    return params;
+    params.set('ajax', 'results');
+
+    const res = await fetch('browse.php?' + params);
+    results.innerHTML = await res.text();
 }
 
-async function runSearch() {
-    const params = buildQuery();
-    const ajaxParams = new URLSearchParams(params);
-    ajaxParams.set('ajax', 'results');
-
-    history.replaceState(null, '', 'browse.php?' + params);
-    if (lastAbort) lastAbort.abort();
-    lastAbort = new AbortController();
-    spinner?.classList.remove('hidden');
-
-    try {
-        const res = await fetch('browse.php?' + ajaxParams, {
-            credentials: 'same-origin',
-            signal: lastAbort.signal,
-        });
-        results.innerHTML = await res.text();
-    } catch (err) {
-        if (err.name !== 'AbortError') {
-            results.innerHTML = '<div class="text-red-600">Search failed.</div>';
-        }
-    } finally {
-        spinner?.classList.add('hidden');
-    }
-}
-
-// Search field — debounce 250ms; filters — fire immediately
-form.querySelector('input[name="q"]')?.addEventListener('input', () => {
+// Debounce typing in the search box by 250 ms
+form.querySelector('input[name="q"]').addEventListener('input', () => {
     clearTimeout(timer);
     timer = setTimeout(runSearch, 250);
 });
+
+// Filters fire immediately on change
 form.querySelectorAll('select, input[type="checkbox"]').forEach(el => {
-    el.addEventListener('change', () => runSearch());
+    el.addEventListener('change', runSearch);
 });
 ```
 
-**Explanation:** implements instant client-side search on the Browse page using the `fetch` API. Three notable techniques:
-
-1. **Debouncing** — the search text input waits 250 ms after the last keystroke before firing a request, so a typist doesn't trigger 30 requests for "macbook".
-2. **`AbortController`** — if the user types faster than the server can respond, the previous in-flight request is cancelled (avoids "racey" outdated results being painted last).
-3. **`history.replaceState`** — the URL bar is kept in sync with the filters, so any search URL is shareable / bookmarkable and the browser back/forward buttons work.
-
-The server's `browse.php?ajax=results` endpoint returns just the inner HTML of the results region; the page swaps it in with `innerHTML`.
+**Explanation:** powers the live search on the Browse page. As the user types, the listings refresh without a page reload. The script collects the form values, sends them to `browse.php?ajax=results`, and replaces the results section with the returned HTML. Typing is debounced by 250 ms so a typist doesn't fire dozens of requests, while filter changes apply instantly.
 
 ## e. Sample CSS Code — Brand Tokens
 
@@ -510,24 +483,18 @@ The server's `browse.php?ajax=results` endpoint returns just the inner HTML of t
 }
 
 body {
-    font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     color: #111827;
     background: #f9fafb;
-    -webkit-font-smoothing: antialiased;
 }
-
-/* Lucide icons are <svg>s injected at runtime; class-based sizing
-   gives us consistent w-/h-equivalents without Tailwind utility class
-   conflicts on the wrapper. */
-[data-lucide]            { width: 1.25rem; height: 1.25rem; vertical-align: -0.125em; }
-[data-lucide].icon-sm    { width: 1rem;    height: 1rem;    }
-[data-lucide].icon-xl    { width: 2rem;    height: 2rem;    }
-[data-lucide].icon-3xl   { width: 3rem;    height: 3rem;    }
 
 .um-otp-cell {
     width: 48px; height: 56px;
-    text-align: center; font-size: 1.4rem; font-weight: 600;
-    border: 1px solid #ececf2; border-radius: 8px; background: #fff;
+    text-align: center;
+    font-size: 1.4rem; font-weight: 600;
+    border: 1px solid #ececf2;
+    border-radius: 8px;
+    background: #fff;
 }
 .um-otp-cell:focus {
     outline: none;
@@ -536,37 +503,23 @@ body {
 }
 ```
 
-**Explanation:** defines three brand-magenta CSS custom properties used across the platform, sets Inter as the global font, and provides utility selectors for the Lucide icon library plus the custom 6-cell OTP input. Because Lucide replaces `<i data-lucide="…">` placeholders with `<svg>` elements at runtime, attribute-selector sizing ensures icons render at consistent dimensions regardless of the surrounding Tailwind classes.
+**Explanation:** sets the three brand-magenta CSS variables that drive every coloured element on the site, applies Inter as the default font, and styles the single-digit OTP input cells used on the registration and order-handover pages.
 
 ## f. Sample MySQL Table Screenshots
 
-The full schema lives in `unimove/schema.sql` and was imported into both the local Docker MySQL 8 instance and the live InfinityFree MySQL database. The screenshots below come from phpMyAdmin.
+The schema lives in `unimove/schema.sql` and was imported into the live InfinityFree MySQL database via phpMyAdmin. The screenshots below show the structure (columns + types) and a few seeded rows for the main tables.
 
-### `users` table
+> **[INSERT SCREENSHOT: `mysql-users.png`]**
+> *Caption:* `users` table — stores identity, role, and verification status for every account.
 
-> **[INSERT SCREENSHOT: `mysql-users-structure.png`]**
-> *Caption:* `users` table — Structure tab in phpMyAdmin. Shows the columns, types, keys, and indexes.
+> **[INSERT SCREENSHOT: `mysql-listings.png`]**
+> *Caption:* `listings` table — items for sale with title, price, condition, and lifecycle status.
 
-> **[INSERT SCREENSHOT: `mysql-users-rows.png`]**
-> *Caption:* `users` table — Browse tab showing seeded test accounts.
+> **[INSERT SCREENSHOT: `mysql-orders.png`]**
+> *Caption:* `orders` table — transactions linking buyers and sellers with the dual handover OTPs.
 
-### `listings` table
-
-> **[INSERT SCREENSHOT: `mysql-listings-structure.png`]**
-
-> **[INSERT SCREENSHOT: `mysql-listings-rows.png`]**
-
-### `orders` table
-
-> **[INSERT SCREENSHOT: `mysql-orders-structure.png`]**
-
-> **[INSERT SCREENSHOT: `mysql-orders-rows.png`]**
-
-### `reviews` table
-
-> **[INSERT SCREENSHOT: `mysql-reviews-structure.png`]**
-
-> **[INSERT SCREENSHOT: `mysql-reviews-rows.png`]**
+> **[INSERT SCREENSHOT: `mysql-reviews.png`]**
+> *Caption:* `reviews` table — 1–5 star ratings posted after a completed order.
 
 ### `messages` table
 
