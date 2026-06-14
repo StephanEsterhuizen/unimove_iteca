@@ -2,14 +2,14 @@
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/db.php';
 
-/* ---------------- Real stats from DB ---------------- */
+// Real stats from DB
 $stats = [
     'listings'     => (int)$pdo->query("SELECT COUNT(*) FROM listings WHERE status = 'active'")->fetchColumn(),
     'students'     => (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'student' AND is_verified = 1")->fetchColumn(),
     'transactions' => (int)$pdo->query("SELECT COUNT(*) FROM orders WHERE status = 'completed'")->fetchColumn(),
 ];
 
-/* ---------------- Category cards ---------------- */
+// Category cards
 $category_meta = [
     'Electronics' => ['icon' => 'laptop',  'bg' => 'bg-pink-100',   'fg' => 'text-pink-600'],
     'Textbooks'   => ['icon' => 'book',    'bg' => 'bg-green-100',  'fg' => 'text-green-600'],
@@ -20,7 +20,7 @@ $categories = $pdo->query(
     "SELECT name FROM categories WHERE name IN ('Electronics','Textbooks','Furniture','Clothing') ORDER BY name"
 )->fetchAll();
 
-/* ---------------- Featured listings ---------------- */
+// Featured listings
 $featured = $pdo->query(
     "SELECT l.listing_id, l.title, l.price, l.condition_type, l.created_at,
             u.full_name AS seller_name,

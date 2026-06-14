@@ -8,7 +8,7 @@ $uid = current_user_id();
 $tab = $_GET['tab'] ?? 'listings';
 if (!in_array($tab, ['listings', 'orders', 'messages'], true)) $tab = 'listings';
 
-/* ---- Delete listing (own only) ---- */
+// Delete listing (own only)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
     require_csrf();
     $del_id = (int)($_POST['listing_id'] ?? 0);
@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     exit;
 }
 
-/* ---- My listings ---- */
+// My listings
 $stmt = $pdo->prepare(
     "SELECT l.*, c.name AS category,
             (SELECT image_path FROM listing_images
@@ -34,7 +34,7 @@ $stmt = $pdo->prepare(
 $stmt->execute([$uid, $uid]);
 $my_listings = $stmt->fetchAll();
 
-/* ---- My orders (buying + selling) ---- */
+// My orders (buying + selling)
 $stmt = $pdo->prepare(
     "SELECT o.*, l.title, l.price AS listing_price,
             (SELECT image_path FROM listing_images
@@ -56,7 +56,7 @@ $stmt = $pdo->prepare(
 $stmt->execute([$uid, $uid, $uid]);
 $orders = $stmt->fetchAll();
 
-/* ---- Recent messages ---- */
+// Recent messages
 $stmt = $pdo->prepare(
     "SELECT m.*, u.full_name AS sender_name, l.title AS listing_title
        FROM messages m

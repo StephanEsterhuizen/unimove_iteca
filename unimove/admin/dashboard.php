@@ -3,7 +3,7 @@ $page_title       = 'Admin Dashboard';
 $active_admin_nav = 'dashboard';
 include __DIR__ . '/_layout.php';
 
-/* ---- KPIs ---- */
+// KPIs
 $kpi = [
     'users'           => (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'student'")->fetchColumn(),
     'listings_total'  => (int)$pdo->query("SELECT COUNT(*) FROM listings WHERE status != 'removed'")->fetchColumn(),
@@ -13,7 +13,7 @@ $kpi = [
     'reports_open'    => (int)$pdo->query("SELECT COUNT(*) FROM reports WHERE status = 'open'")->fetchColumn(),
 ];
 
-/* ---- Recent activity ---- */
+// Recent activity
 $recent_listings = $pdo->query(
     "SELECT l.listing_id, l.title, l.status, l.created_at, u.full_name AS seller_name
        FROM listings l

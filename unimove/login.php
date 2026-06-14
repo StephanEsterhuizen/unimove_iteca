@@ -92,7 +92,7 @@ include __DIR__ . '/includes/header.php';
                         <input type="checkbox" class="w-4 h-4 text-pink-600 rounded">
                         <span class="text-sm text-gray-600">Remember me</span>
                     </label>
-                    <a href="#" class="text-sm text-pink-600 hover:text-pink-700">Forgot password?</a>
+                    <a href="forgot-password.php" class="text-sm text-pink-600 hover:text-pink-700">Forgot password?</a>
                 </div>
 
                 <button type="submit"

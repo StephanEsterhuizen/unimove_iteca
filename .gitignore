@@ -1,6 +1,7 @@
 ﻿# Sensitive / dev-only
 unimove/uploads/mail.log
 unimove/_dropzone/
+unimove/includes/smtp-config.php
 
 # Build artefacts (regenerate locally)
 unimove-deploy.zip

@@ -2,7 +2,7 @@
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/db.php';
 
-/* ---------------- Read filters from GET ---------------- */
+// Read filters from GET
 $q             = trim($_GET['q'] ?? '');
 $category      = trim($_GET['category'] ?? 'all');
 $condition     = trim($_GET['condition'] ?? 'all');
@@ -15,7 +15,7 @@ $page          = max(1, (int)($_GET['page'] ?? 1));
 $per_page      = 12;
 $offset        = ($page - 1) * $per_page;
 
-/* ---------------- Build dynamic WHERE ---------------- */
+// Build dynamic WHERE
 $where  = ["l.status = 'active'"];
 $params = [];
 
@@ -50,7 +50,7 @@ if ($bundle_only) {
 
 $where_sql = 'WHERE ' . implode(' AND ', $where);
 
-/* ---------------- Total count for pagination ---------------- */
+// Total count for pagination
 $count_sql = "SELECT COUNT(*) FROM listings l
                 JOIN categories c   ON c.category_id = l.category_id
            LEFT JOIN pickup_zones pz ON pz.zone_id = l.pickup_zone_id
@@ -60,7 +60,7 @@ $stmt->execute($params);
 $total = (int)$stmt->fetchColumn();
 $total_pages = max(1, (int)ceil($total / $per_page));
 
-/* ---------------- Fetch listings ---------------- */
+// Fetch listings
 $sql = "SELECT l.listing_id, l.title, l.price, l.condition_type, l.is_bundle,
                c.name AS category, pz.name AS pickup_zone,
                u.full_name AS seller_name,
@@ -90,7 +90,7 @@ $all_categories   = $pdo->query('SELECT name FROM categories ORDER BY name')->fe
 $all_zones        = $pdo->query('SELECT name FROM pickup_zones WHERE is_active = 1 ORDER BY name')->fetchAll();
 $all_conditions   = ['New', 'Like New', 'Good', 'Fair', 'Poor'];
 
-/* ---------------- AJAX MODE: return only the results region ---------------- */
+// AJAX MODE: return only the results region
 $is_ajax = ($_GET['ajax'] ?? '') === 'results';
 if ($is_ajax) {
     header('Content-Type: text/html; charset=utf-8');

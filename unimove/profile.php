@@ -13,7 +13,7 @@ $stmt->execute([$pid]);
 $user = $stmt->fetch();
 if (!$user) { http_response_code(404); header('Location: 404.php'); exit; }
 
-/* ---- POST: report this user ---- */
+// POST: report this user
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'report_user') {
     require_csrf();
     require_login();
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'repor
     exit;
 }
 
-/* ---- Active listings ---- */
+// Active listings
 $stmt = $pdo->prepare(
     "SELECT l.listing_id, l.title, l.price, l.condition_type, l.status,
             (SELECT image_path FROM listing_images
@@ -63,7 +63,7 @@ $stmt = $pdo->prepare('SELECT COUNT(*) FROM orders WHERE seller_id = ? AND statu
 $stmt->execute([$pid]);
 $total_sales = (int)$stmt->fetchColumn();
 
-/* ---- Reviews ---- */
+// Reviews
 $stmt = $pdo->prepare(
     "SELECT r.*, u.full_name AS reviewer_name,
             l.title AS listing_title
